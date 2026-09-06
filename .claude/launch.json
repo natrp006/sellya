@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "C:\\Users\\User\\Desktop\\Claude projects\\infomarket\\dev.cmd",
+      "runtimeArgs": [],
+      "port": 3000
+    },
+    {
+      "name": "prod",
+      "runtimeExecutable": "C:\\Users\\User\\Desktop\\Claude projects\\infomarket\\start.cmd",
+      "runtimeArgs": [],
+      "port": 3000
+    }
+  ]
+}
