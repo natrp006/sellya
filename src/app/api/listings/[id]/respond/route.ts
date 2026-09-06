@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
   const newClarifications = questions.map((question, i) => ({ question, answer: answers[i] ?? "" }));
   const allClarifications = [...listing.clarifications, ...newClarifications];
-  const segments = getContent(listing.id) ?? [];
+  const segments = (await getContent(listing.id)) ?? [];
 
   const moderation = await moderationService.reviewListing({
     title: listing.title,

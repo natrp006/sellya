@@ -1,3 +1,5 @@
+import { prisma } from "@/lib/prisma";
+
 export interface PlatformSettings {
   aiApiKey: string | null;
   aiModel: string;
@@ -6,38 +8,36 @@ export interface PlatformSettings {
 
 const DEFAULT_MODEL = "claude-sonnet-5";
 const DEFAULT_COMMISSION_BPS = 2000; // 20%
+const SETTINGS_ROW_ID = "global";
 
 /**
- * Runtime-editable platform config (AI key, model, commission rate) set
- * from the admin panel. Held on globalThis for the same cross-route-bundle
- * reason as src/lib/db — see the comment there. This is in-memory only: it
- * resets on server restart. A real implementation must persist this
- * (encrypted) in a real datastore, not process memory.
+ * Runtime-editable platform config (AI key, model, commission rate), set
+ * from /admin/settings. Persisted in Postgres (PlatformSettings model) —
+ * previously in-memory, which meant the AI key vanished on every restart.
  */
-declare global {
-  // eslint-disable-next-line no-var
-  var __sellyaSettings: PlatformSettings | undefined;
-}
-
-function getStore(): PlatformSettings {
-  if (!globalThis.__sellyaSettings) {
-    globalThis.__sellyaSettings = {
+export async function getSettings(): Promise<PlatformSettings> {
+  const existing = await prisma.platformSettings.findUnique({ where: { id: SETTINGS_ROW_ID } });
+  if (existing) {
+    return { aiApiKey: existing.aiApiKey, aiModel: existing.aiModel, commissionBps: existing.commissionBps };
+  }
+  const created = await prisma.platformSettings.create({
+    data: {
+      id: SETTINGS_ROW_ID,
       aiApiKey: process.env.MODERATION_API_KEY || null,
       aiModel: DEFAULT_MODEL,
       commissionBps: DEFAULT_COMMISSION_BPS,
-    };
-  }
-  return globalThis.__sellyaSettings;
+    },
+  });
+  return { aiApiKey: created.aiApiKey, aiModel: created.aiModel, commissionBps: created.commissionBps };
 }
 
-export function getSettings(): PlatformSettings {
-  return getStore();
-}
-
-export function updateSettings(patch: Partial<PlatformSettings>): PlatformSettings {
-  const store = getStore();
-  Object.assign(store, patch);
-  return store;
+export async function updateSettings(patch: Partial<PlatformSettings>): Promise<PlatformSettings> {
+  await getSettings(); // ensure the row exists before a partial update
+  const updated = await prisma.platformSettings.update({
+    where: { id: SETTINGS_ROW_ID },
+    data: patch,
+  });
+  return { aiApiKey: updated.aiApiKey, aiModel: updated.aiModel, commissionBps: updated.commissionBps };
 }
 
 export function maskApiKey(key: string | null): string | null {

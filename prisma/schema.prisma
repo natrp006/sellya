@@ -1,0 +1,103 @@
+// Real, persisted data model — replaces the in-memory globalThis store.
+// See src/lib/db/index.ts for why the in-memory version existed and what
+// broke because of it (a restart mid-transaction lost track of everything).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id
+  handle        String
+  walletAddress String?
+  role          String
+  createdAt     DateTime @default(now())
+
+  listings     Listing[]      @relation("SellerListings")
+  transactionsAsBuyer  Transaction[] @relation("BuyerTransactions")
+  transactionsAsSeller Transaction[] @relation("SellerTransactions")
+}
+
+model Listing {
+  id       String @id @default(cuid())
+  sellerId String
+  seller   User   @relation("SellerListings", fields: [sellerId], references: [id])
+
+  title    String
+  summary  String
+  tags     String[]
+  priceCents Int
+  currency String @default("usdc")
+  status   String @default("pending_review")
+
+  // Nested/variable-shape data kept as JSON rather than extra tables —
+  // matches ModerationResult / ContentStats / Clarification[] shapes in
+  // src/types exactly, so the repository layer can (de)serialize directly.
+  moderation    Json?
+  contentStats  Json
+  clarifications Json @default("[]")
+
+  lastActivityAt DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  segments     ContentSegment[]
+  transactions Transaction[]
+
+  @@index([sellerId])
+  @@index([status])
+}
+
+model ContentSegment {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  position  Int
+  type      String // "public" | "locked"
+  text      String @db.Text
+
+  @@index([listingId, position])
+}
+
+model Transaction {
+  id       String  @id @default(cuid())
+  escrowId String
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id])
+  buyerId  String
+  buyer    User    @relation("BuyerTransactions", fields: [buyerId], references: [id])
+  sellerId String
+  seller   User    @relation("SellerTransactions", fields: [sellerId], references: [id])
+
+  amountCents   Int
+  amountUnits   String
+  currency      String
+  chain         String
+  depositAddress String
+  commissionBps Int
+  status        String @default("awaiting_payment")
+
+  buyerSendingAddress String?
+  depositTxHash       String?
+  payoutTxHash        String?
+  payoutError         String?
+
+  createdAt DateTime @default(now())
+
+  @@index([listingId])
+  @@index([status])
+}
+
+// Single-row runtime settings (AI key/model, commission rate) — id is
+// always "global". Replaces the in-memory version in src/lib/settings.
+model PlatformSettings {
+  id            String  @id @default("global")
+  aiApiKey      String?
+  aiModel       String  @default("claude-sonnet-5")
+  commissionBps Int     @default(2000)
+}

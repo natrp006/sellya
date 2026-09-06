@@ -30,7 +30,7 @@ export default async function AdminOverviewPage() {
     db.listings.list(),
     db.transactions.listAll(),
     db.users.listAll(),
-    Promise.resolve(getSettings()),
+    getSettings(),
     getTreasuryStatus().catch(() => null),
   ]);
 

@@ -12,7 +12,7 @@ export async function GET() {
   if (!requireAdmin()) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const settings = getSettings();
+  const settings = await getSettings();
   return NextResponse.json({
     aiApiKeySet: !!settings.aiApiKey,
     aiApiKeyMasked: maskApiKey(settings.aiApiKey),
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     patch.commissionBps = Math.round(body.commissionBps);
   }
 
-  const updated = updateSettings(patch);
+  const updated = await updateSettings(patch);
   return NextResponse.json({
     aiApiKeySet: !!updated.aiApiKey,
     aiApiKeyMasked: maskApiKey(updated.aiApiKey),

@@ -202,7 +202,7 @@ const stubModerationService = new StubModerationService();
 
 export const moderationService: ModerationService = {
   async reviewListing(input) {
-    const settings = getSettings();
+    const settings = await getSettings();
     if (settings.aiApiKey) {
       try {
         const ai = new AnthropicModerationService(settings.aiApiKey, settings.aiModel);

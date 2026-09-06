@@ -51,7 +51,7 @@ class TreasuryPaymentService implements PaymentService {
       amountCents: listing.priceCents,
       amountUnits: amountUnits.toString(),
       amountDisplay: usdcUnitsToDisplay(amountUnits),
-      commissionBps: getSettings().commissionBps,
+      commissionBps: (await getSettings()).commissionBps,
       expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     };
   }

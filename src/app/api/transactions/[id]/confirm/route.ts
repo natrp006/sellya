@@ -55,6 +55,6 @@ export async function POST(_request: Request, { params }: { params: { id: string
   }
 
   const final = (await db.transactions.getById(transactionId)) ?? initial;
-  const segments = getContent(final.listingId) ?? [];
+  const segments = (await getContent(final.listingId)) ?? [];
   return NextResponse.json({ transaction: final, content: renderFullView(segments) });
 }

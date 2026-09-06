@@ -68,7 +68,7 @@ export async function findDuplicateContent(
   for (const listing of approvedListings) {
     if (listing.sellerId === sellerId) continue; // the original seller can always relist/resell their own info
 
-    const segments = getContent(listing.id);
+    const segments = await getContent(listing.id);
     if (!segments) continue;
 
     const similarity = jaccardSimilarity(newShingles, shingles(flattenForReview(segments)));

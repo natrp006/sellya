@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/prisma";
 import type { ContentSegment, ContentStats, RenderedSegment } from "@/types/content";
 
 const LOCK_PATTERN = /\{\{([\s\S]*?)\}\}/g;
@@ -63,36 +64,27 @@ export function flattenForReview(segments: ContentSegment[]): string {
   return segments.map((s) => s.text).join("\n\n");
 }
 
-interface ContentStore {
-  [listingId: string]: ContentSegment[];
-}
-
 /**
- * Persisted for the life of the listing — unlike the old review-only content
- * (discarded after moderation), this now has to survive indefinitely because
- * it's the actual deliverable released to buyers on payment. A real
- * implementation must encrypt this at rest and restrict access tightly; it's
- * now the single most sensitive thing the platform stores.
- *
- * Kept on globalThis rather than a plain module variable because Next.js
- * compiles each route into its own server bundle — see src/lib/db/index.ts.
+ * Persisted in Postgres (see prisma/schema.prisma's ContentSegment model) —
+ * this is the actual deliverable released to buyers on payment, so unlike
+ * the old review-only content it has to survive indefinitely. A real
+ * implementation must encrypt this at rest and restrict access tightly;
+ * it's the single most sensitive thing the platform stores.
  */
-declare global {
-  // eslint-disable-next-line no-var
-  var __sellyaContentStore: ContentStore | undefined;
+export async function saveContent(listingId: string, segments: ContentSegment[]): Promise<void> {
+  await prisma.$transaction([
+    prisma.contentSegment.deleteMany({ where: { listingId } }),
+    prisma.contentSegment.createMany({
+      data: segments.map((s, i) => ({ listingId, position: i, type: s.type, text: s.text })),
+    }),
+  ]);
 }
 
-function getStore(): ContentStore {
-  if (!globalThis.__sellyaContentStore) {
-    globalThis.__sellyaContentStore = {};
-  }
-  return globalThis.__sellyaContentStore;
-}
-
-export function saveContent(listingId: string, segments: ContentSegment[]): void {
-  getStore()[listingId] = segments;
-}
-
-export function getContent(listingId: string): ContentSegment[] | undefined {
-  return getStore()[listingId];
+export async function getContent(listingId: string): Promise<ContentSegment[] | undefined> {
+  const rows = await prisma.contentSegment.findMany({
+    where: { listingId },
+    orderBy: { position: "asc" },
+  });
+  if (rows.length === 0) return undefined;
+  return rows.map((r) => ({ type: r.type as ContentSegment["type"], text: r.text }));
 }

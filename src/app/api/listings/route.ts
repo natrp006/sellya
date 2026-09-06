@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
   const { content, ...listingInput } = body;
   const listing = await db.listings.create({ ...listingInput, contentStats });
-  saveContent(listing.id, segments);
+  await saveContent(listing.id, segments);
 
   const flatContent = flattenForReview(segments);
 

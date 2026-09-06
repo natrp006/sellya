@@ -11,7 +11,7 @@ export default async function AdminListingDetailPage({ params }: { params: { id:
   const listing = await db.listings.getById(params.id);
   if (!listing) notFound();
 
-  const segments = renderFullView(getContent(listing.id) ?? []);
+  const segments = renderFullView((await getContent(listing.id)) ?? []);
 
   return (
     <div className="flex flex-col gap-6">

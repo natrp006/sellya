@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const listing = await db.listings.getById(params.id);
   if (!listing) return {};
 
-  const segments = getContent(listing.id) ?? [];
+  const segments = (await getContent(listing.id)) ?? [];
   const description = buildPublicExcerpt(segments) || listing.summary;
   const indexable = listing.status === "approved";
 
@@ -70,7 +70,7 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
   if (!listing) notFound();
   const isOwner = user?.id === listing.sellerId;
 
-  const segments = getContent(listing.id) ?? [];
+  const segments = (await getContent(listing.id)) ?? [];
   const rendered = isOwner ? renderFullView(segments) : renderPublicView(segments);
 
   const jsonLd = {
