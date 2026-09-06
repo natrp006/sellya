@@ -36,10 +36,6 @@ export default function AdminLoginPage() {
   return (
     <div className="mx-auto max-w-sm px-4 py-16 sm:px-6">
       <h1 className="text-2xl font-bold text-gray-900">Admin</h1>
-      <p className="mt-2 text-sm text-gray-600">
-        Placeholder auth for a scaffold — a single shared password, no rate limiting. Replace before this goes
-        anywhere near production.
-      </p>
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <input
           type="password"
