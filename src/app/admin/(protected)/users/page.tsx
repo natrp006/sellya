@@ -29,7 +29,18 @@ export default async function AdminUsersPage() {
               <tr key={u.id} className="border-b border-gray-100 last:border-none">
                 <td className="px-4 py-3 font-medium text-gray-900">{u.handle}</td>
                 <td className="px-4 py-3">
-                  <WalletEditor userId={u.id} currentAddress={u.walletAddress} />
+                  <div className="flex items-center gap-2">
+                    <WalletEditor userId={u.id} currentAddress={u.walletAddress} />
+                    {u.walletAddress && (
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                          u.walletVerifiedAt ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        {u.walletVerifiedAt ? "Verified" : "Unverified"}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 capitalize text-gray-700">{u.role}</td>
                 <td className="px-4 py-3 text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>

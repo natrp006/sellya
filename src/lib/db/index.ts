@@ -38,6 +38,12 @@ export interface UserRepository {
   listAll(): Promise<User[]>;
   updateWalletAddress(id: string, walletAddress: string): Promise<User | null>;
   getOrCreateBySessionId(sessionId: string): Promise<User>;
+  /** Issues a fresh single-use nonce for a wallet-signature challenge, replacing any prior one. */
+  setWalletNonce(id: string, nonce: string, expiresAt: Date): Promise<void>;
+  /** The outstanding challenge (if any) issued via setWalletNonce, for verifying a signature against. */
+  getWalletNonce(id: string): Promise<{ nonce: string; expiresAt: Date } | null>;
+  /** Verified wallet ownership: sets walletAddress + walletVerifiedAt and clears the nonce. */
+  verifyWallet(id: string, walletAddress: string): Promise<User | null>;
 }
 
 export interface TransactionRepository {
@@ -176,11 +182,19 @@ class PrismaListingRepository implements ListingRepository {
   }
 }
 
-function toUser(row: { id: string; handle: string; walletAddress: string | null; role: string; createdAt: Date }): User {
+function toUser(row: {
+  id: string;
+  handle: string;
+  walletAddress: string | null;
+  walletVerifiedAt: Date | null;
+  role: string;
+  createdAt: Date;
+}): User {
   return {
     id: row.id,
     handle: row.handle,
     walletAddress: row.walletAddress,
+    walletVerifiedAt: row.walletVerifiedAt ? row.walletVerifiedAt.toISOString() : null,
     role: row.role as User["role"],
     createdAt: row.createdAt.toISOString(),
   };
@@ -199,7 +213,8 @@ class PrismaUserRepository implements UserRepository {
 
   async updateWalletAddress(id: string, walletAddress: string): Promise<User | null> {
     try {
-      const row = await prisma.user.update({ where: { id }, data: { walletAddress } });
+      // Admin-set, not signature-proven — clears any prior verification of a different address.
+      const row = await prisma.user.update({ where: { id }, data: { walletAddress, walletVerifiedAt: null } });
       return toUser(row);
     } catch {
       return null;
@@ -213,6 +228,36 @@ class PrismaUserRepository implements UserRepository {
       data: { id: sessionId, handle: `anon_${sessionId.slice(0, 6)}`, role: "seller" },
     });
     return toUser(created);
+  }
+
+  async setWalletNonce(id: string, nonce: string, expiresAt: Date): Promise<void> {
+    await prisma.user.update({ where: { id }, data: { walletNonce: nonce, walletNonceExpiresAt: expiresAt } });
+  }
+
+  async getWalletNonce(id: string): Promise<{ nonce: string; expiresAt: Date } | null> {
+    const row = await prisma.user.findUnique({
+      where: { id },
+      select: { walletNonce: true, walletNonceExpiresAt: true },
+    });
+    if (!row?.walletNonce || !row.walletNonceExpiresAt) return null;
+    return { nonce: row.walletNonce, expiresAt: row.walletNonceExpiresAt };
+  }
+
+  async verifyWallet(id: string, walletAddress: string): Promise<User | null> {
+    try {
+      const row = await prisma.user.update({
+        where: { id },
+        data: {
+          walletAddress,
+          walletVerifiedAt: new Date(),
+          walletNonce: null,
+          walletNonceExpiresAt: null,
+        },
+      });
+      return toUser(row);
+    } catch {
+      return null;
+    }
   }
 }
 

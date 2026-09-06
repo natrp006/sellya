@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { daysUntilExpiry, LISTING_EXPIRY_DAYS } from "@/lib/listings/expiry";
 import { StatusBadge, ContentStatsBadge } from "@/components/ui/Badge";
 import { RenewButton } from "@/components/listings/RenewButton";
+import { ConnectWalletButton } from "@/components/wallet/ConnectWalletButton";
 import { formatPrice } from "@/lib/format";
 import type { Listing } from "@/types/listing";
 
@@ -47,6 +48,13 @@ export default async function DashboardPage() {
         {LISTING_EXPIRY_DAYS} days with no buyer or seller activity — click &ldquo;Keep active&rdquo; any time to
         reset the clock.
       </p>
+
+      <div className="mt-6">
+        <ConnectWalletButton
+          currentAddress={user?.walletAddress ?? null}
+          verified={!!user?.walletVerifiedAt}
+        />
+      </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="w-full min-w-[560px] text-left text-sm">

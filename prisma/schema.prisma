@@ -12,11 +12,14 @@ datasource db {
 }
 
 model User {
-  id            String   @id
+  id            String    @id
   handle        String
   walletAddress String?
+  walletVerifiedAt DateTime?
+  walletNonce          String?
+  walletNonceExpiresAt DateTime?
   role          String
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
 
   listings     Listing[]      @relation("SellerListings")
   transactionsAsBuyer  Transaction[] @relation("BuyerTransactions")
