@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { computeContentStats, flattenForReview, parseContent, saveContent } from "@/lib/content";
 import { moderationService } from "@/lib/moderation";
 import { findDuplicateContent } from "@/lib/moderation/duplicateCheck";
+import { checkRateLimit } from "@/lib/rateLimit";
 import type { CreateListingInput, ListingStatus } from "@/types/listing";
 import type { ModerationVerdict } from "@/types/moderation";
 
@@ -31,6 +32,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Each listing costs a real AI moderation call — cap creation, not just reads.
+  const limited = checkRateLimit(request, "listings-create", 20, 60 * 60 * 1000);
+  if (limited) return limited;
+
   const body = (await request.json()) as CreateListingInput;
 
   if (!body.title || !body.summary || !body.sellerId || !body.content?.trim()) {

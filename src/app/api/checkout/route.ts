@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { paymentService } from "@/lib/payments";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
+  const limited = checkRateLimit(request, "checkout", 20, 60 * 1000);
+  if (limited) return limited;
+
   const { listingId } = (await request.json()) as { listingId: string };
 
   const listing = await db.listings.getById(listingId);

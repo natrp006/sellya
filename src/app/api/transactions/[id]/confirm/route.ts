@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getContent, renderFullView } from "@/lib/content";
 import { findIncomingTransfer, isValidAddress, sendUsdcPayout } from "@/lib/chain";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 /**
  * Real on-chain check, not a client-trusted claim: scans the treasury
@@ -11,7 +12,11 @@ import { findIncomingTransfer, isValidAddress, sendUsdcPayout } from "@/lib/chai
  * best-effort next step and can fail (e.g. no valid wallet on file) without
  * blocking delivery; retrying this endpoint retries the payout too.
  */
-export async function POST(_request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  // This is polled by the buyer's "Check for payment" button, so the cap has to stay generous.
+  const limited = checkRateLimit(request, "transaction-confirm", 30, 60 * 1000);
+  if (limited) return limited;
+
   const transactionId = params.id;
   const initial = await db.transactions.getById(transactionId);
   if (!initial) {
