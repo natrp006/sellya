@@ -20,7 +20,7 @@ const SUMMARY_QUESTION =
 const CONTENT_QUESTION =
   "Your content seems too short for a meaningful review — can you expand on it?";
 const LOCK_QUESTION =
-  "Nothing in your content is marked as locked ({{like this}}) — as written, buyers would see everything for free before paying. Is that intentional, or would you like to lock specific key details?";
+  "Nothing in your content is marked as locked ({{like this}}) — as written, buyers would see everything for free before paying. Is that intentional, or would you like to lock some of it?";
 
 const CONTACT_DATA_PATTERN = /\b(contact list|lead list|client list|database of|email list)\b/i;
 
@@ -99,7 +99,7 @@ class StubModerationService implements ModerationService {
   }
 }
 
-const SYSTEM_PROMPT = `You are the automated moderation and quality-assurance reviewer for SellYa, an anonymous marketplace where people sell packaged information (playbooks, processes, contact lists, know-how). Sellers upload their full content and mark specific key details as locked/paywalled using {{double curly braces}}; everything else is shown publicly for free. Your job is to decide whether a submitted listing can go live.
+const SYSTEM_PROMPT = `You are the automated moderation and quality-assurance reviewer for SellYa, an anonymous marketplace where people sell packaged information (playbooks, processes, contact lists, know-how). Sellers upload their full content and mark whatever they choose as locked/paywalled using {{double curly braces}} — anywhere from none of it to all of it is a legitimate choice; everything not marked is shown publicly for free. Your job is to decide whether a submitted listing can go live, not to steer how much a seller locks.
 
 Respond with ONLY a single JSON object, no other text, no markdown fences, matching exactly this shape:
 {"verdict":"approved"|"rejected"|"needs_info","reasons":string[],"questions":string[],"qualityScore":number|null,"summary":string|null}

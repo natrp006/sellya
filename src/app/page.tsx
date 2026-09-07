@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Sell Any Information, Anonymously, for Crypto",
   description:
-    "SellYa is an open marketplace for packaged information — side-hustle playbooks, sourcing methods, contact lists, niche know-how. List anything, get AI-reviewed, and let buyers read most of it free before paying in crypto to unlock the one key detail.",
+    "SellYa is an open marketplace for packaged information — side-hustle playbooks, sourcing methods, contact lists, niche know-how. List anything, get AI-reviewed, and choose how much buyers can read free before paying in crypto to unlock the rest.",
   alternates: { canonical: "/" },
 };
 
@@ -38,9 +38,9 @@ export default async function HomePage() {
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-brand-600">1. List anything</h2>
             <p className="mt-2 text-sm text-gray-600">
-              No categories to squeeze into — just a title, tags, and your full write-up. Wrap only the one or two
-              key details you&apos;re actually selling (a supplier contact, an exact number, a script) in{" "}
-              <code className="rounded bg-gray-100 px-1">{"{{curly braces}}"}</code> to lock them.
+              No categories to squeeze into — just a title, tags, and your full write-up. Wrap whatever you want
+              paywalled in <code className="rounded bg-gray-100 px-1">{"{{curly braces}}"}</code> — you can reveal
+              100%, 0%, or anything in between. It&apos;s your call.
             </p>
           </div>
           <div>
@@ -53,9 +53,9 @@ export default async function HomePage() {
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-brand-600">3. Read before you buy</h2>
             <p className="mt-2 text-sm text-gray-600">
-              Sellers can&apos;t hide behind a pitch — everything except the locked detail is public and free to
-              read, so you&apos;re judging the actual substance, not trusting a score. Payment is stablecoin
-              escrow, and the locked part is delivered automatically the moment it clears.
+              Whatever a seller leaves public is free to read before you buy, so you&apos;re judging on what&apos;s
+              actually shown, not trusting a score. Payment is stablecoin escrow, and the locked part is delivered
+              automatically the moment it clears.
             </p>
           </div>
         </div>
@@ -69,7 +69,7 @@ export default async function HomePage() {
         <div className="mt-6 rounded-xl border border-brand-100 bg-brand-50 p-4">
           <h2 className="text-sm font-semibold text-brand-700">Sell it once. Sell it forever.</h2>
           <p className="mt-1 text-sm text-gray-700">
-            The locked detail is delivered privately to each buyer — it&apos;s never published, even after
+            Whatever&apos;s locked is delivered privately to each buyer — it&apos;s never published, even after
             someone pays for it, so the same listing can be sold to as many buyers as want it. And buyers
             can&apos;t turn around and resell what they bought: new listings are checked against everything
             already on SellYa, and anything that duplicates another seller&apos;s content is rejected. Only the

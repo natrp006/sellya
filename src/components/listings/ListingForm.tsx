@@ -142,10 +142,10 @@ export function ListingForm({ sellerId }: { sellerId: string }) {
           Content
         </label>
         <p className="mb-1.5 text-xs text-gray-500">
-          Write the whole thing. Wrap the specific key detail(s) you want to sell in{" "}
-          <code className="rounded bg-gray-100 px-1">{"{{double curly braces}}"}</code> — that part gets paywalled
-          and delivered automatically on purchase. Everything else is shown publicly for free, so buyers can judge
-          quality before paying.
+          Write the whole thing. Wrap whatever you want paywalled in{" "}
+          <code className="rounded bg-gray-100 px-1">{"{{double curly braces}}"}</code> — that part gets delivered
+          automatically on purchase. It&apos;s entirely your call how much that is: lock one detail, lock
+          everything, or don&apos;t lock anything at all.
         </p>
         <textarea
           id="content"
@@ -153,7 +153,7 @@ export function ListingForm({ sellerId }: { sellerId: string }) {
           required
           rows={10}
           placeholder={
-            "Explain your method, process, or findings in full. Then wrap the one key detail you're actually selling, e.g.:\n\n...and that's the general approach. {{The exact supplier is Acme Corp, contact: jane@acme.example, ask for the wholesale tier.}}"
+            "Explain your method, process, or findings in full. Wrap whatever you're paywalling in double curly braces — anywhere from a single detail to the entire write-up, e.g.:\n\n...and that's the general approach. {{The exact supplier is Acme Corp, contact: jane@acme.example, ask for the wholesale tier.}}"
           }
           className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
         />
