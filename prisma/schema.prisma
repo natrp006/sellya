@@ -104,3 +104,16 @@ model PlatformSettings {
   aiModel       String  @default("claude-sonnet-5")
   commissionBps Int     @default(2000)
 }
+
+// Messages sent through the public contact form to the admin — there's no
+// accounts/email system, so this is the only inbound support channel.
+model ContactMessage {
+  id          String   @id @default(cuid())
+  message     String   @db.Text
+  contactInfo String?
+  sessionId   String?
+  status      String   @default("new") // "new" | "read"
+  createdAt   DateTime @default(now())
+
+  @@index([status])
+}

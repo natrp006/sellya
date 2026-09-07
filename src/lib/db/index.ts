@@ -1,6 +1,7 @@
 import { Prisma, type Listing as PrismaListing } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isInactiveTooLong } from "@/lib/listings/expiry";
+import type { ContactMessage } from "@/types/contactMessage";
 import type { ContentStats } from "@/types/content";
 import type { Clarification, CreateListingInput, Listing, ListingStatus } from "@/types/listing";
 import type { ModerationResult } from "@/types/moderation";
@@ -379,8 +380,54 @@ class PrismaTransactionRepository implements TransactionRepository {
   }
 }
 
+export interface ContactMessageRepository {
+  create(input: { message: string; contactInfo: string | null; sessionId: string | null }): Promise<ContactMessage>;
+  listAll(): Promise<ContactMessage[]>;
+  markRead(id: string): Promise<ContactMessage | null>;
+}
+
+function toContactMessage(row: {
+  id: string;
+  message: string;
+  contactInfo: string | null;
+  sessionId: string | null;
+  status: string;
+  createdAt: Date;
+}): ContactMessage {
+  return {
+    id: row.id,
+    message: row.message,
+    contactInfo: row.contactInfo,
+    sessionId: row.sessionId,
+    status: row.status as ContactMessage["status"],
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+class PrismaContactMessageRepository implements ContactMessageRepository {
+  async create(input: { message: string; contactInfo: string | null; sessionId: string | null }): Promise<ContactMessage> {
+    const row = await prisma.contactMessage.create({ data: input });
+    return toContactMessage(row);
+  }
+
+  async listAll(): Promise<ContactMessage[]> {
+    const rows = await prisma.contactMessage.findMany({ orderBy: { createdAt: "desc" } });
+    return rows.map(toContactMessage);
+  }
+
+  async markRead(id: string): Promise<ContactMessage | null> {
+    try {
+      const row = await prisma.contactMessage.update({ where: { id }, data: { status: "read" } });
+      return toContactMessage(row);
+    } catch {
+      return null;
+    }
+  }
+}
+
 export const db = {
   listings: new PrismaListingRepository() as ListingRepository,
   users: new PrismaUserRepository() as UserRepository,
   transactions: new PrismaTransactionRepository() as TransactionRepository,
+  contactMessages: new PrismaContactMessageRepository() as ContactMessageRepository,
 };
