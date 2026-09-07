@@ -18,11 +18,6 @@ export default async function HomePage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <div className="mb-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        <strong className="font-semibold">Under construction.</strong> SellYa is live for real-world testing —
-        expect rough edges, and don&apos;t rely on anything here yet, including payments.
-      </div>
-
       <section className="mb-12 max-w-3xl">
         <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
           Sell what you know. Buy what actually works.
