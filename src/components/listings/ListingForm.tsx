@@ -157,6 +157,11 @@ export function ListingForm({ sellerId }: { sellerId: string }) {
           }
           className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
         />
+        <p className="mt-1.5 text-xs text-gray-400">
+          Tip: if a buyer might have questions after purchase, consider including a way to reach you somewhere in
+          here (an email, a Telegram handle, anything) — entirely optional, and your call whether it&apos;s public
+          or part of what&apos;s locked.
+        </p>
       </div>
 
       <div>
