@@ -1,6 +1,7 @@
 import { Prisma, type Listing as PrismaListing } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isInactiveTooLong } from "@/lib/listings/expiry";
+import { logUnexpectedError } from "@/lib/logging";
 import type { ContactMessage } from "@/types/contactMessage";
 import type { ContentStats } from "@/types/content";
 import type { Clarification, CreateListingInput, Listing, ListingStatus } from "@/types/listing";
@@ -139,7 +140,8 @@ class PrismaListingRepository implements ListingRepository {
         data: { status, moderation: (moderation ?? Prisma.JsonNull) as unknown as Prisma.InputJsonValue },
       });
       return toListing(row);
-    } catch {
+    } catch (err) {
+      logUnexpectedError("db.listings.updateStatus", err);
       return null;
     }
   }
@@ -179,7 +181,9 @@ class PrismaListingRepository implements ListingRepository {
   }
 
   async touchActivity(id: string): Promise<void> {
-    await prisma.listing.update({ where: { id }, data: { lastActivityAt: new Date() } }).catch(() => {});
+    await prisma.listing
+      .update({ where: { id }, data: { lastActivityAt: new Date() } })
+      .catch((err) => logUnexpectedError("db.listings.touchActivity", err));
   }
 }
 
@@ -217,7 +221,8 @@ class PrismaUserRepository implements UserRepository {
       // Admin-set, not signature-proven — clears any prior verification of a different address.
       const row = await prisma.user.update({ where: { id }, data: { walletAddress, walletVerifiedAt: null } });
       return toUser(row);
-    } catch {
+    } catch (err) {
+      logUnexpectedError("db.users.updateWalletAddress", err);
       return null;
     }
   }
@@ -256,7 +261,8 @@ class PrismaUserRepository implements UserRepository {
         },
       });
       return toUser(row);
-    } catch {
+    } catch (err) {
+      logUnexpectedError("db.users.verifyWallet", err);
       return null;
     }
   }
@@ -331,7 +337,8 @@ class PrismaTransactionRepository implements TransactionRepository {
     try {
       const row = await prisma.transaction.update({ where: { id }, data: { status } });
       return toTransaction(row);
-    } catch {
+    } catch (err) {
+      logUnexpectedError("db.transactions.updateStatus", err);
       return null;
     }
   }
@@ -343,7 +350,8 @@ class PrismaTransactionRepository implements TransactionRepository {
         data: { status: "funded", depositTxHash, buyerSendingAddress },
       });
       return toTransaction(row);
-    } catch {
+    } catch (err) {
+      logUnexpectedError("db.transactions.recordDeposit", err);
       return null;
     }
   }
@@ -355,7 +363,8 @@ class PrismaTransactionRepository implements TransactionRepository {
         data: { status: "released", payoutTxHash, payoutError: null },
       });
       return toTransaction(row);
-    } catch {
+    } catch (err) {
+      logUnexpectedError("db.transactions.recordPayout", err);
       return null;
     }
   }
@@ -364,7 +373,8 @@ class PrismaTransactionRepository implements TransactionRepository {
     try {
       const row = await prisma.transaction.update({ where: { id }, data: { payoutError: message } });
       return toTransaction(row);
-    } catch {
+    } catch (err) {
+      logUnexpectedError("db.transactions.recordPayoutError", err);
       return null;
     }
   }
@@ -419,7 +429,8 @@ class PrismaContactMessageRepository implements ContactMessageRepository {
     try {
       const row = await prisma.contactMessage.update({ where: { id }, data: { status: "read" } });
       return toContactMessage(row);
-    } catch {
+    } catch (err) {
+      logUnexpectedError("db.contactMessages.markRead", err);
       return null;
     }
   }

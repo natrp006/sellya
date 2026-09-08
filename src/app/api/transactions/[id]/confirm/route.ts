@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getContent, renderFullView } from "@/lib/content";
 import { findIncomingTransfer, isValidAddress, sendUsdcPayout } from "@/lib/chain";
+import { logUnexpectedError } from "@/lib/logging";
 import { checkRateLimit } from "@/lib/rateLimit";
 
 /**
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         const payoutTxHash = await sendUsdcPayout(seller.walletAddress, payoutUnits);
         await db.transactions.recordPayout(transactionId, payoutTxHash);
       } catch (err) {
+        logUnexpectedError(`payout for transaction ${transactionId}`, err);
         await db.transactions.recordPayoutError(transactionId, err instanceof Error ? err.message : String(err));
       }
     } else {

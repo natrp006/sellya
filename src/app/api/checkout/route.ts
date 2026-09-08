@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { paymentService } from "@/lib/payments";
+import { logUnexpectedError } from "@/lib/logging";
 import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
@@ -24,6 +25,7 @@ export async function POST(request: NextRequest) {
   try {
     escrow = await paymentService.createEscrowIntent(listing, buyer);
   } catch (err) {
+    logUnexpectedError(`checkout for listing ${listingId}`, err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Payments are not configured yet" },
       { status: 503 }

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { getTreasuryStatus } from "@/lib/chain";
 import { formatPrice } from "@/lib/format";
+import { logUnexpectedError } from "@/lib/logging";
 import type { ListingStatus } from "@/types/listing";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +32,10 @@ export default async function AdminOverviewPage() {
     db.transactions.listAll(),
     db.users.listAll(),
     getSettings(),
-    getTreasuryStatus().catch(() => null),
+    getTreasuryStatus().catch((err) => {
+      logUnexpectedError("admin.overview.getTreasuryStatus", err);
+      return null;
+    }),
   ]);
 
   const byStatus = STATUS_ORDER.map((status) => ({
