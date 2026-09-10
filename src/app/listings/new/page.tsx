@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { ListingForm } from "@/components/listings/ListingForm";
+import { ConnectWalletButton } from "@/components/wallet/ConnectWalletButton";
 
 // Depends on the current (anonymous) session — must render per-request
 // once getCurrentUser() is backed by real per-request auth.
@@ -23,6 +24,19 @@ export default async function NewListingPage() {
       <p className="mt-2 text-sm text-gray-600">
         Submissions are screened automatically before they go live. You&apos;ll see the AI review result right away.
       </p>
+
+      {!user.walletAddress && (
+        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-medium text-amber-800">
+            You don&apos;t have a payout wallet set yet — if this listing sells, payment can&apos;t reach you until
+            you verify one.
+          </p>
+          <div className="mt-3">
+            <ConnectWalletButton currentAddress={user.walletAddress} verified={!!user.walletVerifiedAt} />
+          </div>
+        </div>
+      )}
+
       <div className="mt-6">
         <ListingForm sellerId={user.id} />
       </div>
