@@ -19,49 +19,61 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   if (limited) return limited;
 
   const transactionId = params.id;
-  const initial = await db.transactions.getById(transactionId);
-  if (!initial) {
-    return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
-  }
 
-  if (initial.status !== "awaiting_payment" && initial.status !== "funded" && initial.status !== "released") {
-    return NextResponse.json({ error: `Transaction is ${initial.status}` }, { status: 400 });
-  }
-
-  if (initial.status === "awaiting_payment") {
-    const found = await findIncomingTransfer(initial.depositAddress, BigInt(initial.amountUnits));
-    if (!found) {
-      return NextResponse.json({
-        status: "awaiting_payment",
-        message: "No matching payment detected on-chain yet — this can take a minute or two after sending.",
-      });
+  try {
+    const initial = await db.transactions.getById(transactionId);
+    if (!initial) {
+      return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
     }
-    await db.transactions.recordDeposit(transactionId, found.txHash, found.from);
-  }
 
-  const afterDeposit = await db.transactions.getById(transactionId);
-  if (afterDeposit && afterDeposit.status === "funded") {
-    const seller = await db.users.getById(afterDeposit.sellerId);
-    if (seller?.walletAddress && isValidAddress(seller.walletAddress)) {
-      try {
-        const amountUnits = BigInt(afterDeposit.amountUnits);
-        const commissionUnits = (amountUnits * BigInt(afterDeposit.commissionBps)) / 10_000n;
-        const payoutUnits = amountUnits - commissionUnits;
-        const payoutTxHash = await sendUsdcPayout(seller.walletAddress, payoutUnits);
-        await db.transactions.recordPayout(transactionId, payoutTxHash);
-      } catch (err) {
-        logUnexpectedError(`payout for transaction ${transactionId}`, err);
-        await db.transactions.recordPayoutError(transactionId, err instanceof Error ? err.message : String(err));
+    if (initial.status !== "awaiting_payment" && initial.status !== "funded" && initial.status !== "released") {
+      return NextResponse.json({ error: `Transaction is ${initial.status}` }, { status: 400 });
+    }
+
+    if (initial.status === "awaiting_payment") {
+      const found = await findIncomingTransfer(initial.depositAddress, BigInt(initial.amountUnits));
+      if (!found) {
+        return NextResponse.json({
+          status: "awaiting_payment",
+          message: "No matching payment detected on-chain yet — this can take a minute or two after sending.",
+        });
       }
-    } else {
-      await db.transactions.recordPayoutError(
-        transactionId,
-        "Seller has no valid wallet address on file — payout is pending until one is set."
-      );
+      await db.transactions.recordDeposit(transactionId, found.txHash, found.from);
     }
-  }
 
-  const final = (await db.transactions.getById(transactionId)) ?? initial;
-  const segments = (await getContent(final.listingId)) ?? [];
-  return NextResponse.json({ transaction: final, content: renderFullView(segments) });
+    const afterDeposit = await db.transactions.getById(transactionId);
+    if (afterDeposit && afterDeposit.status === "funded") {
+      const seller = await db.users.getById(afterDeposit.sellerId);
+      if (seller?.walletAddress && isValidAddress(seller.walletAddress)) {
+        try {
+          const amountUnits = BigInt(afterDeposit.amountUnits);
+          const commissionUnits = (amountUnits * BigInt(afterDeposit.commissionBps)) / 10_000n;
+          const payoutUnits = amountUnits - commissionUnits;
+          const payoutTxHash = await sendUsdcPayout(seller.walletAddress, payoutUnits);
+          await db.transactions.recordPayout(transactionId, payoutTxHash);
+        } catch (err) {
+          logUnexpectedError(`payout for transaction ${transactionId}`, err);
+          await db.transactions.recordPayoutError(transactionId, err instanceof Error ? err.message : String(err));
+        }
+      } else {
+        await db.transactions.recordPayoutError(
+          transactionId,
+          "Seller has no valid wallet address on file — payout is pending until one is set."
+        );
+      }
+    }
+
+    const final = (await db.transactions.getById(transactionId)) ?? initial;
+    const segments = (await getContent(final.listingId)) ?? [];
+    return NextResponse.json({ transaction: final, content: renderFullView(segments) });
+  } catch (err) {
+    // Anything unexpected here (e.g. an RPC provider failure) must still come back as
+    // valid JSON — an uncaught throw returns an empty body, which breaks the client's
+    // res.json() with a confusing "Unexpected end of JSON input" instead of a real message.
+    logUnexpectedError(`confirm for transaction ${transactionId}`, err);
+    return NextResponse.json(
+      { error: "Could not check payment status right now — please try again in a moment." },
+      { status: 502 }
+    );
+  }
 }

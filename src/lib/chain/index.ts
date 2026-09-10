@@ -68,11 +68,18 @@ export interface IncomingTransfer {
   blockNumber: number;
 }
 
+// Base's public RPC (mainnet.base.org) rejects an eth_getLogs call spanning
+// more than ~2,000 blocks — a single 10,000-block query throws outright, so
+// the lookback window has to be split into chunks small enough to stay
+// under that cap.
+const MAX_LOG_RANGE_BLOCKS = 1_900;
+
 /**
  * Scans recent Transfer events for one matching `expectedUnits` sent to
  * `toAddress`. Brute-force log scan over a bounded lookback window rather
  * than tracking a "last checked block" cursor — fine for this scaffold's
- * volume, would need real indexing (or a webhook provider) at scale.
+ * volume, would need real indexing (or a webhook provider) at scale. Scans
+ * newest-first in chunks since a fresh deposit is almost always recent.
  */
 export async function findIncomingTransfer(
   toAddress: string,
@@ -82,17 +89,24 @@ export async function findIncomingTransfer(
   const provider = getProvider();
   const contract = getUsdcContract(provider);
   const latest = await provider.getBlockNumber();
-  const fromBlock = Math.max(0, latest - lookbackBlocks);
-
+  const earliestBlock = Math.max(0, latest - lookbackBlocks);
   const filter = contract.filters.Transfer!(null, toAddress);
-  const events = await contract.queryFilter(filter, fromBlock, latest);
 
-  for (const event of events) {
-    if (!("args" in event) || !event.args) continue;
-    const value = event.args.value as bigint;
-    if (value === expectedUnits) {
-      return { txHash: event.transactionHash, from: event.args.from as string, blockNumber: event.blockNumber };
+  let rangeEnd = latest;
+  while (rangeEnd >= earliestBlock) {
+    const rangeStart = Math.max(earliestBlock, rangeEnd - MAX_LOG_RANGE_BLOCKS);
+    const events = await contract.queryFilter(filter, rangeStart, rangeEnd);
+
+    for (const event of events) {
+      if (!("args" in event) || !event.args) continue;
+      const value = event.args.value as bigint;
+      if (value === expectedUnits) {
+        return { txHash: event.transactionHash, from: event.args.from as string, blockNumber: event.blockNumber };
+      }
     }
+
+    if (rangeStart === earliestBlock) break;
+    rangeEnd = rangeStart - 1;
   }
   return null;
 }
