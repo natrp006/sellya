@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 import { flattenForReview, getContent } from "@/lib/content";
 import { moderationService } from "@/lib/moderation";
 import type { ListingStatus } from "@/types/listing";
@@ -16,6 +17,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   if (!listing) {
     return NextResponse.json({ error: "Listing not found" }, { status: 404 });
   }
+
+  const user = await getCurrentUser();
+  if (!user || user.id !== listing.sellerId) {
+    return NextResponse.json({ error: "Only the seller can respond to this listing's review" }, { status: 403 });
+  }
+
   if (listing.status !== "needs_info" || !listing.moderation) {
     return NextResponse.json({ error: "This listing isn't awaiting clarification" }, { status: 400 });
   }

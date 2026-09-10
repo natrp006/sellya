@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 import { computeContentStats, flattenForReview, parseContent, saveContent } from "@/lib/content";
 import { moderationService } from "@/lib/moderation";
 import { findDuplicateContent } from "@/lib/moderation/duplicateCheck";
@@ -36,20 +37,25 @@ export async function POST(request: NextRequest) {
   const limited = checkRateLimit(request, "listings-create", 20, 60 * 60 * 1000);
   if (limited) return limited;
 
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "No session available" }, { status: 401 });
+  }
+
   const body = (await request.json()) as CreateListingInput;
 
-  if (!body.title || !body.summary || !body.sellerId || !body.content?.trim()) {
-    return NextResponse.json(
-      { error: "title, summary, sellerId, and content are required" },
-      { status: 400 }
-    );
+  if (!body.title || !body.summary || !body.content?.trim()) {
+    return NextResponse.json({ error: "title, summary, and content are required" }, { status: 400 });
   }
 
   const segments = parseContent(body.content);
   const contentStats = computeContentStats(segments);
 
-  const { content, ...listingInput } = body;
-  const listing = await db.listings.create({ ...listingInput, contentStats });
+  // sellerId always comes from the authenticated session, never the request
+  // body — otherwise any client could submit a listing under someone else's
+  // identity just by naming their user id in the JSON payload.
+  const { content, sellerId: _ignoredSellerId, ...listingInput } = body;
+  const listing = await db.listings.create({ ...listingInput, sellerId: user.id, contentStats });
   await saveContent(listing.id, segments);
 
   const flatContent = flattenForReview(segments);
